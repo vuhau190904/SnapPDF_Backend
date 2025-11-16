@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model files {
+  id       String    @id @db.VarChar(255)
+  user_id  String    @db.VarChar(255)
+  link_s3  String?   @db.VarChar(255)
+  content  String?
+  createat DateTime? @default(now()) @db.Timestamp(6)
+  users    users     @relation(fields: [user_id], references: [id], onDelete: Cascade, map: "fk_file_user_id")
+}
+
+model users {
+  id        String    @id @db.VarChar(255)
+  email     String    @unique @db.VarChar(255)
+  avatar    String?   @db.VarChar(255)
+  createdat DateTime? @default(now()) @db.Timestamp(6)
+  files     files[]
+}
