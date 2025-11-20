@@ -1,4 +1,5 @@
 import prisma from '../database/prisma.js';
+import Constant from '../util/constant.js';
 
 /**
  * Files Service with Prisma
@@ -17,7 +18,8 @@ class FileService {
     try {
       const files = await prisma.files.findMany({
         where: {
-          user_email: userEmail
+        user_email: userEmail,
+        status: { not: Constant.MANAGEMENT }
         },
         skip,
         take,
