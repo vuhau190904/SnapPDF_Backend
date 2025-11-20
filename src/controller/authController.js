@@ -65,14 +65,13 @@ router.post('/google/login', async (req, res) => {
       email: userInfo.email,
       picture: userInfo.picture
     });
-    console.log(`✅ User ready: ${user.email} (ID: ${user.id})`);
+    console.log(`✅ User ready: ${user.email}`);
 
     // 3. Tạo Service Access Token
     const serviceToken = authService.generateServiceToken();
 
     // 4. Lưu thông tin user vào Redis với token làm key (cho session)
     const tokenData = {
-      userId: user.id,
       email: user.email,
       avatar: user.avatar,
       loginAt: new Date().toISOString()
@@ -91,7 +90,6 @@ router.post('/google/login', async (req, res) => {
         tokenType: 'Bearer',
         expiresIn: ttl,
         user: {
-          id: user.id,
           email: user.email,
           avatar: user.avatar
         }

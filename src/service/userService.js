@@ -3,7 +3,7 @@ import prisma from '../database/prisma.js';
 /**
  * User Service with Prisma
  * Quản lý users với PostgreSQL database
- * Schema: id, email, avatar, createdAt
+ * Schema: email (PK), avatar, created_at
  */
 class UserService {
   /**
@@ -23,22 +23,6 @@ class UserService {
     }
   }
 
-  /**
-   * Tìm user theo ID
-   * @param {string} id - User ID
-   * @returns {Promise<object|null>} - User object hoặc null
-   */
-  async findById(id) {
-    try {
-      const user = await prisma.users.findUnique({
-        where: { id }
-      });
-      return user;
-    } catch (error) {
-      console.error('❌ Error finding user by ID:', error);
-      return null;
-    }
-  }
 
   /**
    * Tạo user mới
@@ -106,20 +90,6 @@ class UserService {
   }
 
   /**
-   * Đếm tổng số users
-   * @returns {Promise<number>}
-   */
-  async countUsers() {
-    try {
-      const count = await prisma.users.count();
-      return count;
-    } catch (error) {
-      console.error('❌ Error counting users:', error);
-      return 0;
-    }
-  }
-
-  /**
    * Get hoặc Create user (tìm hoặc tạo mới)
    * Dùng email làm unique identifier
    * @param {object} googleUserData - Dữ liệu user từ Google { email, picture }
@@ -159,46 +129,24 @@ class UserService {
       throw error;
     }
   }
-
-  /**
-   * Lấy tất cả users (với pagination)
-   * @param {number} skip - Số records bỏ qua
-   * @param {number} take - Số records lấy
-   * @returns {Promise<Array>}
-   */
-  async getAllUsers(skip = 0, take = 100) {
-    try {
-      const users = await prisma.users.findMany({
-        skip,
-        take,
-        orderBy: {
-          createdAt: 'desc'
-        }
-      });
-      return users;
-    } catch (error) {
-      console.error('❌ Error getting all users:', error);
-      return [];
-    }
-  }
-
+  
   /**
    * Lấy files của user
-   * @param {string} userId - User ID
+   * @param {string} userEmail - User email
    * @param {number} skip - Số records bỏ qua
    * @param {number} take - Số records lấy
    * @returns {Promise<Array>}
    */
-  async getUserFiles(userId, skip = 0, take = 100) {
+  async getUserFiles(userEmail, skip = 0, take = 100) {
     try {
-      const files = await prisma.file.findMany({
+      const files = await prisma.files.findMany({
         where: {
-          user_id: userId
+          user_email: userEmail
         },
         skip,
         take,
         orderBy: {
-          createAt: 'desc'
+          created_at: 'desc'
         }
       });
       return files;
@@ -210,16 +158,15 @@ class UserService {
 
   /**
    * Tạo file mới
-   * @param {object} fileData - { user_id, link_s3, content }
+   * @param {object} fileData - { id, user_email }
    * @returns {Promise<object>}
    */
   async createFile(fileData) {
     try {
-      const newFile = await prisma.file.create({
+      const newFile = await prisma.files.create({
         data: {
-          user_id: fileData.user_id,
-          link_s3: fileData.link_s3,
-          content: fileData.content || ''
+          id: fileData.id,
+          user_email: fileData.user_email
         }
       });
 
@@ -239,10 +186,10 @@ class UserService {
    */
   async getFileById(fileId) {
     try {
-      const file = await prisma.file.findUnique({
+      const file = await prisma.files.findUnique({
         where: { id: fileId },
         include: {
-          user: {
+          users: {
             select: {
               email: true,
               avatar: true
@@ -264,7 +211,7 @@ class UserService {
    */
   async deleteFile(fileId) {
     try {
-      await prisma.file.delete({
+      await prisma.files.delete({
         where: { id: fileId }
       });
 

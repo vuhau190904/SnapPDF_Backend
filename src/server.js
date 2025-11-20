@@ -5,6 +5,7 @@ import redisClient from './database/redis.js';
 import { connectDatabase, disconnectDatabase } from './database/prisma.js';
 import authRoutes from './controller/authController.js';
 import userRoutes from './controller/userController.js';
+import ocrRoutes from './controller/ocrController.js';
 
 // Load environment variables
 dotenv.config();
@@ -60,6 +61,7 @@ app.use((req, res, next) => {
  */
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/ocr', ocrRoutes);
 
 // ==================== Error Handling ====================
 
