@@ -1,8 +1,10 @@
 import express from 'express';
-import authMiddleware from '../middleware/authMiddleware.js';
+import authMiddleware, { basicAuthMiddleware } from '../middleware/authMiddleware.js';
 import { upload } from '../middleware/fileMiddleware.js';
 import ocrService from '../service/ocrService.js';
 import awsService from '../service/awsService.js';
+import Constant from '../util/constant.js';
+import fileService from '../service/fileService.js';
 
 const router = express.Router();
 
@@ -19,7 +21,7 @@ router.post('/upload', authMiddleware, upload.array('images', 50), async (req, r
 
     const userEmail = req.user.email;
     console.log('userEmail', userEmail);
-    const language = req.query.language || req.body.language || 'vie'; 
+    const language = req.query.language || ''; 
     
     await ocrService.processImages(req.files, userEmail, language);
 
@@ -44,6 +46,18 @@ router.post('/upload', authMiddleware, upload.array('images', 50), async (req, r
       error: error.message
     });
   }
+});
+
+router.get('', basicAuthMiddleware, async (req, res) => {
+  console.log('req.params', req.query);
+  if(!req.query.file_id)
+    return res.status(400);
+  console.log('req.query.file_id', req.query.file_id);
+  const test = await fileService.updateFile(req.query.file_id, {
+    status: Constant.COMPLETED
+  });
+  console.log('test', test);
+  return res.status(200);
 });
 
 export default router;

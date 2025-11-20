@@ -1,4 +1,9 @@
 import prisma from '../database/prisma.js';
+import Constant from '../util/constant.js';
+import fileService from './fileService.js';
+import awsService from './awsService.js';
+import crypto from 'crypto';
+
 
 /**
  * User Service with Prisma
@@ -105,7 +110,7 @@ class UserService {
       if (user) {
         // User đã tồn tại
         console.log('👤 Existing user:', user.email);
-        
+
         // Cập nhật avatar nếu có thay đổi
         if (picture && user.avatar !== picture) {
           user = await this.updateUser(email, {
@@ -129,7 +134,7 @@ class UserService {
       throw error;
     }
   }
-  
+
   /**
    * Lấy files của user
    * @param {string} userEmail - User email
@@ -223,6 +228,47 @@ class UserService {
       return false;
     }
   }
+
+  async filterUniqueFiles(files) {
+    const hashSet = new Set();
+    const uniqueFiles = [];
+
+    for (const file of files) {
+      const hash = crypto.createHash('sha256').update(file.buffer).digest('hex');
+
+      if (!hashSet.has(hash)) {
+        hashSet.add(hash);
+        uniqueFiles.push(file);
+      }
+    }
+
+    return uniqueFiles;
+  }
+
+  async processFiles(files, userEmail) {
+    const uniqueFiles = await this.filterUniqueFiles(files);
+
+    const datas = uniqueFiles.map(file => ({
+      id: file.originalname.split('.').slice(0, -1).join("."),
+      user_email: userEmail,
+      status: Constant.MANAGEMENT,
+      extension: file.originalname.split('.').pop()
+    }));
+
+    console.log("datas", datas);
+
+    await fileService.createFiles(datas);
+
+    for (const image of uniqueFiles) {
+      await awsService.uploadImage(
+        'management',
+        image.buffer,
+        image.originalname,
+        image.mimetype
+      );
+    }
+  }
+
 }
 
 // Tạo instance singleton

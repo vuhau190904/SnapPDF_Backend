@@ -1,4 +1,9 @@
 import redisClient from '../database/redis.js';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const BASIC_AUTH_USERNAME = process.env.BASIC_AUTH_USERNAME || 'admin';
+const BASIC_AUTH_PASSWORD = process.env.BASIC_AUTH_PASSWORD || 'password';
 
 /**
  * Middleware xác thực token
@@ -78,6 +83,41 @@ const authMiddleware = async (req, res, next) => {
     });
   }
 };
+
+// Basic Authentication middleware
+export const basicAuthMiddleware = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+
+  if (!authHeader || !authHeader.startsWith('Basic ')) {
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized: Missing or malformed Authorization header',
+      error: 'MISSING_BASIC_AUTH'
+    });
+  }
+
+  // Decode base64 credentials
+  const base64Credentials = authHeader.slice(6);
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('utf8');
+  const [username, password] = credentials.split(':');
+  // For demo purposes, replace with your own logic or configuration
+  if (
+    username !== BASIC_AUTH_USERNAME ||
+    password !== BASIC_AUTH_PASSWORD
+  ) {
+    console.log("FAIL");
+    console.log('password', password);
+    return res.status(401).json({
+      success: false,
+      message: 'Unauthorized: Invalid basic authentication credentials',
+      error: 'INVALID_BASIC_AUTH'
+    });
+  }
+  console.log("SUCCESS");
+
+  next();
+};
+
 
 export default authMiddleware;
 

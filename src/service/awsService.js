@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { SQSClient, SendMessageCommand, SendMessageBatchCommand } from '@aws-sdk/client-sqs';
 import dotenv from 'dotenv';
 
@@ -23,9 +24,9 @@ class AwsService {
     this.OcrSqsQueueUrl = process.env.AWS_SQS_OCR_QUEUE_URL;
   }
 
-  async uploadImage(fileBuffer, fileName, mimeType) {
+  async uploadImage(prefix, fileBuffer, fileName, mimeType) {
     try {
-      const fileKey = `images/${fileName}`;
+      const fileKey = `${prefix}/${fileName}`;
       console.log("bucket", this.s3Bucket);
       await this.s3Client.send(new PutObjectCommand({
         Bucket: this.s3Bucket,
@@ -77,6 +78,27 @@ class AwsService {
     } catch (error) {
       console.error('❌ Error getting file stream from S3:', error);
       throw new Error(`Failed to get file from S3: ${error.message}`);
+    }
+  }
+
+  async getPresignedUrl(fileKey, expiresIn = 3600) {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.s3Bucket,
+        Key: fileKey
+      });
+
+      const signedUrl = await getSignedUrl(this.s3Client, command, { 
+        expiresIn // URL expires in seconds (default 1 hour)
+      });
+      
+      console.log('✅ Presigned URL generated for:', fileKey);
+      
+      return signedUrl;
+
+    } catch (error) {
+      console.error('❌ Error generating presigned URL:', error);
+      return null; // Return null if file doesn't exist
     }
   }
 

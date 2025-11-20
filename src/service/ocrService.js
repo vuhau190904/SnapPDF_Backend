@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import fileService from './fileService.js';
 import awsService from './awsService.js';
+import Constant from '../util/constant.js';
+
 
 class OcrService {
   async filterUniqueImages(images) {
@@ -37,16 +39,8 @@ class OcrService {
         extension,
         fileName: `${id}.${extension}`
       };
-
-      try {
-        await fileService.createFile({
-          id: id,
-          user_email: userEmail
-        });
-        imagesWithId.push(imageWithId);
-      } catch (error) {
-        console.error(`❌ Failed to save ${id} to DB:`, error.message);
-      }
+      
+      imagesWithId.push(imageWithId);
     }
 
     return imagesWithId;
@@ -57,8 +51,18 @@ class OcrService {
 
     const processedImages = await this.assignUuidAndSave(uniqueImages, userEmail);
 
+    const datas = processedImages.map(image => ({
+      id: image.id,
+      user_email: userEmail,
+      status: Constant.PENDING,
+      extension: image.extension
+    }));
+
+    await fileService.createFiles(datas);
+
     for (const image of processedImages) {
         await awsService.uploadImage(
+          'images',
           image.buffer,
           image.fileName,  
           image.mimetype

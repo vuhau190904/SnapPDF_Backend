@@ -29,3 +29,11 @@ export const upload = multer({
     }
   }
 });
+
+export const uploadManagement = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 50 // Max 50 files
+  }
+});
